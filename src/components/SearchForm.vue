@@ -1,107 +1,75 @@
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
+import { useNewsStore } from '../stores/newsStore';
 
-const emit = defineEmits(['filter'])
+const newsStore = useNewsStore();
 
 const form = ref({
-  name: '',
-  minDay: null,
-  maxDay: null,
-  minMonth: null,
-  maxMonth: null,
-  minYear: null,
-  maxYear: null
-})
+  title: '',
+  author: '',
+  minScore: null,
+  maxScore: null,
+  fromDate: '',
+  toDate: ''
+});
 
 const applyFilters = () => {
-  emit('filter', {
-    name: typeof form.value.name === 'string' ? form.value.name.trim() : '',
-    minDay: form.value.minDay !== null ? Number(form.value.minDay) : null,
-    maxDay: form.value.maxDay !== null ? Number(form.value.maxDay) : null,
-    minMonth: form.value.minDay !== null ? Number(form.value.minDay) : null,
-    maxMonth: form.value.maxDay !== null ? Number(form.value.maxDay) : null,
-    minYear: form.value.minDay !== null ? Number(form.value.minDay) : null,
-    maxYear: form.value.maxDay !== null ? Number(form.value.maxDay) : null
-  })
-}
+  newsStore.setFilters({
+    title: form.value.title,
+    author: form.value.author,
+    minScore: form.value.minScore ? Number(form.value.minScore) : null,
+    maxScore: form.value.maxScore ? Number(form.value.maxScore) : null,
+    fromDate: form.value.fromDate,
+    toDate: form.value.toDate
+  });
+};
 
 const resetFilters = () => {
   form.value = {
-    name: '',
-    minDay: null,
-    maxDay: null,
-    minMonth: null,
-    maxMonth: null,
-    minYear: null,
-    maxYear: null
-  }
-  applyFilters()
-}
+    title: '',
+    author: '',
+    minScore: null,
+    maxScore: null,
+    fromDate: '',
+    toDate: ''
+  };
+  newsStore.resetFilters();
+};
 </script>
 
 <template>
   <form @submit.prevent="applyFilters" class="search-form">
+    <h3>Фильтры новостей</h3>
+
     <div class="form-group">
-      <label>Название:</label>
-      <input
-          v-model="form.name"
-          type="text"
-          placeholder="Поиск по названию"
-      >
+      <label>Заголовок:</label>
+      <input v-model="form.title" type="text" placeholder="Поиск...">
     </div>
 
     <div class="form-group">
-      <label>День:</label>
-      <div class="date-range">
-        <input
-            v-model.number="form.minDay"
-            type="number"
-            placeholder="От"
-            min="0"
-        >
-        <span>-</span>
-        <input
-            v-model.number="form.maxDay"
-            type="number"
-            placeholder="До"
-            :min="form.minDay || 0"
-        >
+      <label>Автор:</label>
+      <input v-model="form.author" type="text" placeholder="Автор...">
+    </div>
+
+    <div class="form-group">
+      <label>Рейтинг:</label>
+      <div class="range-container">
+        <div class="range-input">
+          <input v-model.number="form.minScore" type="number" placeholder="От" min="0">
+        </div>
+        <div class="range-separator">-</div>
+        <div class="range-input">
+          <input v-model.number="form.maxScore" type="number" placeholder="До" :min="form.minScore || 0">
+        </div>
       </div>
     </div>
+
     <div class="form-group">
-      <label>Месяц:</label>
-      <div class="date-range">
-        <input
-            v-model.number="form.minMonth"
-            type="number"
-            placeholder="От"
-            min="0"
-        >
-        <span>-</span>
-        <input
-            v-model.number="form.maxMonth"
-            type="number"
-            placeholder="До"
-            :min="form.minMonth || 0"
-        >
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Год:</label>
-      <div class="date-range">
-        <input
-            v-model.number="form.minYear"
-            type="number"
-            placeholder="От"
-            min="0"
-        >
-        <span>-</span>
-        <input
-            v-model.number="form.maxYear"
-            type="number"
-            placeholder="До"
-            :min="form.minYear || 0"
-        >
+      <label>Дата:</label>
+      <div class="date-container">
+        <input v-model="form.fromDate" type="date">
+        <span class="date-separator">-</span>
+        <input v-model="form.toDate" type="date" :min="form.fromDate">
       </div>
     </div>
 
@@ -114,42 +82,79 @@ const resetFilters = () => {
 
 <style scoped>
 .search-form {
-  padding: 20px;
+  background: white;
+  padding: 16px;
   border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-form h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #333;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
 }
 
-.date-range {
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.range-container,
+.date-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
 }
 
-.date-range input {
-  width: 100px;
-  padding: 8px;
+.range-input,
+.date-container input {
+  flex: 1;
+  min-width: 0;
+}
+
+.range-separator,
+.date-separator {
+  flex: 0 0 auto;
 }
 
 .form-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .btn {
-  padding: 8px 16px;
+  flex: 1;
+  padding: 8px;
   border: none;
   border-radius: 4px;
+  font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn.primary {
@@ -158,6 +163,24 @@ const resetFilters = () => {
 }
 
 .btn.secondary {
-  background-color: red;
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .range-container,
+  .date-container {
+    flex-wrap: wrap;
+  }
+
+  .range-input,
+  .date-container input {
+    flex: 1 1 100%;
+  }
+
+  .range-separator,
+  .date-separator {
+    display: none;
+  }
 }
 </style>

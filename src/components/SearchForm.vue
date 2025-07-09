@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useNewsStore } from '../stores/newsStore';
+import { useNewsStore } from './stores/newsStore.js';
 
 const newsStore = useNewsStore();
 

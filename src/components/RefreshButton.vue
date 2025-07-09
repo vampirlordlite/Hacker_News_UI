@@ -1,5 +1,9 @@
 <script setup>
 import { useNewsStore } from '../stores/newsStore.js';
+import SvgIcon from '@jamescoyle/vue-icon';
+import { mdiReload } from '@mdi/js';
+
+const path = mdiReload;
 
 const newsStore = useNewsStore();
 
@@ -9,8 +13,8 @@ const refresh = () => {
 </script>
 
 <template>
-  <button @click="refresh" class="refresh-button">
-    🔄 Обновить
+  <button @click="refresh" class="reload-button">
+    <svg-icon type="mdi" :path="path"></svg-icon>
   </button>
 </template>
 

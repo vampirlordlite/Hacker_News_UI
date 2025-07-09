@@ -4,10 +4,8 @@ import useHackerNewsApi from '../composables/useHackerNewsApi';
 export const useNewsStore = defineStore('news', {
     state: () => ({
         news: [],
-        loading: false,
-        error: null,
-        autoUpdateInterval: null,
         isAutoUpdateActive: false,
+        autoUpdateInterval: null,
         filters: {
             title: '',
             author: '',
@@ -20,15 +18,12 @@ export const useNewsStore = defineStore('news', {
 
     actions: {
         async fetchNews() {
-            this.loading = true;
-            this.error = null;
+            const { fetchTopStories } = useHackerNewsApi();
             try {
-                const { fetchTopStories } = useHackerNewsApi();
                 this.news = await fetchTopStories();
             } catch (err) {
-                this.error = err.message;
-            } finally {
-                this.loading = false;
+                console.error('Error fetching news:', err);
+                throw err;
             }
         },
 
@@ -49,10 +44,10 @@ export const useNewsStore = defineStore('news', {
 
         startAutoUpdate() {
             this.stopAutoUpdate();
+            this.isAutoUpdateActive = true;
             this.autoUpdateInterval = setInterval(() => {
                 this.fetchNews();
             }, 60000);
-            this.isAutoUpdateActive = true;
             this.fetchNews();
         },
 
@@ -68,19 +63,16 @@ export const useNewsStore = defineStore('news', {
     getters: {
         filteredNews(state) {
             return state.news.filter(item => {
-                // Фильтрация по заголовку
                 if (state.filters.title &&
                     !item.title.toLowerCase().includes(state.filters.title.toLowerCase())) {
                     return false;
                 }
 
-                // Фильтрация по автору
                 if (state.filters.author &&
                     !item.by.toLowerCase().includes(state.filters.author.toLowerCase())) {
                     return false;
                 }
 
-                // Фильтрация по рейтингу
                 if (state.filters.minScore !== null && item.score < state.filters.minScore) {
                     return false;
                 }
@@ -88,7 +80,6 @@ export const useNewsStore = defineStore('news', {
                     return false;
                 }
 
-                // Фильтрация по дате
                 const itemDate = new Date(item.time * 1000);
                 if (state.filters.fromDate && itemDate < new Date(state.filters.fromDate)) {
                     return false;
@@ -99,6 +90,14 @@ export const useNewsStore = defineStore('news', {
 
                 return true;
             }).sort((a, b) => b.time - a.time);
+        },
+
+        loading() {
+            return useHackerNewsApi().loading.value;
+        },
+
+        error() {
+            return useHackerNewsApi().error.value;
         }
     }
 });

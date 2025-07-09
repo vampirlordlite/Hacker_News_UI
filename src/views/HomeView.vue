@@ -1,8 +1,20 @@
 <script setup>
 import NewsList from '../components/NewsList.vue';
 import AutoRefreshButton from "../components/AutoRefreshButton.vue";
-import HandleRefresh from "../components/HandleRefrresh.vue";
 import SearchForm from "../components/SearchForm.vue";
+import { useNewsStore } from '../stores/newsStore';
+import { onMounted } from 'vue';
+import HandleRefresh from "../components/HandleRefresh.vue";
+
+const newsStore = useNewsStore();
+
+onMounted(async () => {
+  try {
+    await newsStore.fetchNews();
+  } catch (err) {
+    console.error('Failed to load news:', err);
+  }
+});
 </script>
 
 <template>
@@ -10,7 +22,7 @@ import SearchForm from "../components/SearchForm.vue";
     <div class="sidebar">
       <div class="controls">
         <AutoRefreshButton />
-        <HandleRefresh />
+        <HandleRefresh/>
       </div>
       <SearchForm />
     </div>
@@ -22,51 +34,62 @@ import SearchForm from "../components/SearchForm.vue";
 
 <style scoped>
 .home-view {
-  display: flex;
-  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .sidebar {
-  width: 320px;
-  min-width: 320px;
-  background: #f8f9fa;
-  border-right: 1px solid #e0e0e0;
-  padding: 16px;
   position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
+  top: 20px;
+  height: fit-content;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .controls {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
 .content {
   flex: 1;
-  padding: 20px;
-  background: #fff;
-  margin-left: 320px;
 }
 
-@media (max-width: 992px) {
+.refresh-btn {
+  padding: 8px 16px;
+  background: #42b983;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+  transition: background 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #3aa876;
+}
+
+.refresh-btn:disabled {
+  background: #bdbdbd;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
   .home-view {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .sidebar {
-    width: 100%;
-    height: auto;
     position: static;
-    border-right: none;
-    border-bottom: 1px solid #e0e0e0;
-  }
-
-  .content {
-    margin-left: 0;
+    margin-bottom: 20px;
   }
 }
 </style>

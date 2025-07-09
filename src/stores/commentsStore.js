@@ -23,7 +23,6 @@ export const useCommentsStore = defineStore('comments', {
             try {
                 const { fetchComment } = useHackerNewsApi();
 
-                // Фильтруем невалидные ID
                 const validIds = this.currentCommentIds.filter(id =>
                     id !== undefined && id !== null
                 );
@@ -33,20 +32,40 @@ export const useCommentsStore = defineStore('comments', {
                     return;
                 }
 
-                this.comments = await Promise.all(
-                    validIds.map(id =>
-                        fetchComment(id).catch(e => {
-                            console.error(`Error fetching comment ${id}:`, e);
-                            return null;
-                        })
-                    )
-                ).then(comments => comments.filter(Boolean));
+                this.comments = await this.limitedParallelCommentsFetch(validIds, fetchComment);
             } catch (err) {
                 this.error = err.message;
                 this.comments = [];
             } finally {
                 this.loading = false;
             }
+        },
+
+        async limitedParallelCommentsFetch(ids, fetchFn, maxConcurrent = 5) {
+            const results = [];
+            const queue = [...ids];
+
+            async function processQueue() {
+                while (queue.length) {
+                    const id = queue.shift();
+                    try {
+                        const comment = await fetchFn(id);
+                        results.push(comment);
+                    } catch (e) {
+                        console.error(`Error fetching comment ${id}:`, e);
+                        results.push(null);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
+
+            const workers = Array(Math.min(maxConcurrent, ids.length))
+                .fill()
+                .map(processQueue);
+
+            await Promise.all(workers);
+
+            return results.filter(Boolean);
         },
 
         startAutoUpdate() {

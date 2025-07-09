@@ -1,19 +1,31 @@
 import { ref } from 'vue';
 
 const API_BASE_URL = 'https://hacker-news.firebaseio.com/v0';
-const STORY_LIMIT = 100; // Лимит новостей для загрузки
+const STORY_LIMIT = 100;
+const MAX_CONCURRENT_REQUESTS = 5; // Ограничение параллельных запросов
+const REQUEST_DELAY = 200; // Задержка между запросами в мс
 
 export default function useHackerNewsApi() {
     const loading = ref(false);
     const error = ref(null);
 
-    // Базовый метод для получения любого элемента (новости, комментария и т.д.)
+    const fetchWithRetry = async (url, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Не удалось загрузить данные');
+                return await response.json();
+            } catch (err) {
+                if (i === retries - 1) throw err;
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Экспоненциальная задержка
+            }
+        }
+    };
+
     const fetchItem = async (id) => {
         try {
             loading.value = true;
-            const response = await fetch(`${API_BASE_URL}/item/${id}.json`);
-            if (!response.ok) throw new Error('Не удалось загрузить данные');
-            return await response.json();
+            return await fetchWithRetry(`${API_BASE_URL}/item/${id}.json`);
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -22,29 +34,49 @@ export default function useHackerNewsApi() {
         }
     };
 
-    // Получение топ-новостей
+    const limitedParallelRequests = async (items, fn) => {
+        const results = [];
+        const queue = [...items];
+
+        async function processQueue() {
+            while (queue.length) {
+                const item = queue.shift();
+                try {
+                    const result = await fn(item);
+                    results.push(result);
+                } catch (e) {
+                    console.error(`Error processing item ${item}:`, e);
+                    results.push(null);
+                }
+                await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
+            }
+        }
+
+        const workers = Array(MAX_CONCURRENT_REQUESTS).fill().map(processQueue);
+        await Promise.all(workers);
+
+        return results;
+    };
+
     const fetchTopStories = async () => {
         try {
             loading.value = true;
             error.value = null;
 
-            // Получаем ID топ-новостей
-            const response = await fetch(`${API_BASE_URL}/topstories.json`);
-            if (!response.ok) throw new Error('Не удалось загрузить список новостей');
+            const response = await fetchWithRetry(`${API_BASE_URL}/topstories.json`);
+            const ids = response.slice(0, STORY_LIMIT);
 
-            const ids = await response.json();
-            const limitedIds = ids.slice(0, STORY_LIMIT);
+            const stories = await limitedParallelRequests(ids, async (id) => {
+                try {
+                    const story = await fetchItem(id);
+                    return story && story.type === 'story' ? story : null;
+                } catch (e) {
+                    console.error(`Ошибка загрузки новости ${id}:`, e);
+                    return null;
+                }
+            });
 
-            // Загружаем детали для каждой новости
-            const stories = await Promise.all(
-                limitedIds.map(id => fetchItem(id).catch(e => {
-                        console.error(`Ошибка загрузки новости ${id}:`, e);
-                        return null;
-                    })
-                ))
-
-            // Фильтруем только валидные новости
-            return stories.filter(story => story && story.type === 'story');
+            return stories.filter(Boolean);
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -53,7 +85,6 @@ export default function useHackerNewsApi() {
         }
     };
 
-    // Получение комментария по ID
     const fetchComment = async (id) => {
         try {
             const comment = await fetchItem(id);
@@ -71,6 +102,7 @@ export default function useHackerNewsApi() {
         loading,
         error,
         fetchTopStories,
-        fetchComment
+        fetchComment,
+        fetchItem
     };
 }

@@ -1,7 +1,7 @@
 <script setup>
 import NewsList from '../components/NewsList.vue';
 import AutoRefreshButton from "../components/AutoRefreshButton.vue";
-import HandleRefresh from "../components/HandleRefrresh.vue";
+import HandleRefresh from "../components/HandleRefresh.vue";
 import SearchForm from "../components/SearchForm.vue";
 </script>
 

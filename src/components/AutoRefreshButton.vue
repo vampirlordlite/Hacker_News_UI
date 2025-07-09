@@ -1,43 +1,58 @@
 <script setup>
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useNewsStore } from '../stores/newsStore.js';
 
 const newsStore = useNewsStore();
+const state = ref(newsStore.isAutoUpdateActive);
 
-const toggleAutoUpdate = () => {
-  if (newsStore.isAutoUpdateActive) {
-    newsStore.stopAutoUpdate();
-  } else {
-    newsStore.startAutoUpdate();
-  }
+onMounted(() => {
+  state.value = newsStore.isAutoUpdateActive;
+});
+
+const toggleState = () => {
+  state.value = !state.value;
 };
+
+watch(state, (newVal) => {
+  if (newVal) {
+    newsStore.startAutoUpdate();
+  } else {
+    newsStore.stopAutoUpdate();
+  }
+});
+
+onUnmounted(() => {
+  newsStore.stopAutoUpdate();
+});
 </script>
 
 <template>
   <button
-      @click="toggleAutoUpdate"
-      :disabled="newsStore.loading"
-      :class="['auto-refresh-btn', newsStore.isAutoUpdateActive ? 'active' : '']"
+      @click="toggleState"
+      :class="['btn', state ? 'active' : 'disabled']"
   >
-    {{ newsStore.isAutoUpdateActive ? '🔄 Автообновление: ВКЛ' : '⏸️ Автообновление: ВЫКЛ' }}
+    {{ state ? 'Автообновление: ВКЛ' : 'Автообновление: ВЫКЛ' }}
   </button>
 </template>
 
 <style scoped>
-.auto-refresh-btn {
-  padding: 8px 16px;
+.btn {
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  background: #f1f1f1;
-  color: #333;
-  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+
 }
-.auto-refresh-btn.active {
-  background: #42b983;
+
+.btn.active {
+  background-color: #4CAF50;
   color: white;
 }
-.auto-refresh-btn:disabled {
-  background: #bdbdbd;
-  cursor: not-allowed;
+
+.btn.disabled {
+  background-color: #d32f2f;
+  color: white;
 }
 </style>

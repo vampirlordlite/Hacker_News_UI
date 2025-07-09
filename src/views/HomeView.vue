@@ -21,8 +21,8 @@ onMounted(async () => {
   <div class="home-view">
     <div class="sidebar">
       <div class="controls">
-        <AutoRefreshButton />
-        <HandleRefresh/>
+        <AutoRefreshButton class="btn"/>
+        <HandleRefresh class="btn"/>
       </div>
       <SearchForm />
     </div>
@@ -56,6 +56,12 @@ onMounted(async () => {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.btn {
+  flex: 1;
+  height: 100%;
+  padding: 10px 20px;
 }
 
 .content {

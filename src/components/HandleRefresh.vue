@@ -12,8 +12,12 @@ onMounted(() => {
 onUnmounted(() => {
   newsStore.stopAutoUpdate();
 });
+
+const handleRefresh = () => {
+  newsStore.fetchNews();
+};
 </script>
 
 <template>
-  <RefreshButton />
+  <RefreshButton @click="handleRefresh" />
 </template>

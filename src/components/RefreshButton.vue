@@ -13,14 +13,13 @@ const refresh = () => {
 </script>
 
 <template>
-  <button @click="refresh" class="reload-button">
-    <svg-icon type="mdi" :path="path"></svg-icon>
-  </button>
+  <button @click="refresh" class="refresh-button"><svg-icon type="mdi" :path="path"></svg-icon></button>
 </template>
 
 <style scoped>
 .refresh-button {
-  padding: 8px 12px;
+  margin-bottom: 20px;
+  padding: 8px 16px;
   background: #747bff;
   color: white;
   border: none;
